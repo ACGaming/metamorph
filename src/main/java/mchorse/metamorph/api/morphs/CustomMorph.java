@@ -10,6 +10,7 @@ import mchorse.metamorph.client.render.RenderCustomModel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumHand;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -31,6 +32,16 @@ public class CustomMorph extends AbstractMorph
      */
     public Pose pose;
 
+    /**
+     * Current custom pose
+     */
+    public String currentPose = "";
+
+    /**
+     * Apply current pose on sneaking
+     */
+    public boolean currentPoseOnSneak = false;
+
     /* Rendering */
 
     @Override
@@ -45,7 +56,7 @@ public class CustomMorph extends AbstractMorph
 
             if (data != null && data.defaultTexture != null)
             {
-                model.pose = model.model.poses.get("standing");
+                model.pose = this.pose == null ? model.model.poses.get("standing") : this.pose;
                 model.swingProgress = 0;
 
                 Minecraft.getMinecraft().renderEngine.bindTexture(data.defaultTexture);
@@ -112,7 +123,9 @@ public class CustomMorph extends AbstractMorph
      */
     public void updateSize(EntityLivingBase target, IMorphing cap)
     {
-        this.pose = model.getPose(EntityUtils.getPose(target));
+        String poseName = EntityUtils.getPose(target, this.currentPose, this.currentPoseOnSneak);
+
+        this.pose = model.getPose(poseName);
 
         if (this.pose != null)
         {
@@ -126,7 +139,7 @@ public class CustomMorph extends AbstractMorph
      * Clone this {@link CustomMorph} 
      */
     @Override
-    public AbstractMorph clone()
+    public AbstractMorph clone(boolean isRemote)
     {
         CustomMorph morph = new CustomMorph();
 
@@ -137,7 +150,11 @@ public class CustomMorph extends AbstractMorph
         morph.action = this.action;
 
         morph.model = this.model;
-        morph.renderer = this.renderer;
+
+        if (isRemote)
+        {
+            morph.renderer = this.renderer;
+        }
 
         return morph;
     }
@@ -152,5 +169,36 @@ public class CustomMorph extends AbstractMorph
     public float getHeight(EntityLivingBase target)
     {
         return this.pose != null ? this.pose.size[1] : 1.8F;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        boolean equals = super.equals(obj);
+
+        if (obj instanceof CustomMorph)
+        {
+            return equals && this.currentPose.equals(((CustomMorph) obj).currentPose);
+        }
+
+        return equals;
+    }
+
+    @Override
+    public void toNBT(NBTTagCompound tag)
+    {
+        super.toNBT(tag);
+
+        tag.setString("Pose", this.currentPose);
+        tag.setBoolean("Sneak", this.currentPoseOnSneak);
+    }
+
+    @Override
+    public void fromNBT(NBTTagCompound tag)
+    {
+        super.fromNBT(tag);
+
+        this.currentPose = tag.getString("Pose");
+        this.currentPoseOnSneak = tag.getBoolean("Sneak");
     }
 }

@@ -35,17 +35,6 @@ public class EntityUtils
      */
     public static NBTTagCompound stripEntityNBT(NBTTagCompound tag)
     {
-        /* Custom displayed name */
-        if (tag.hasKey("CustomName", 8))
-        {
-            String name = tag.getString("CustomName");
-
-            if (!name.equals("jeb_") && !name.equals("Grumm") && !name.equals("Dinnerbone") && !name.equals("Toast"))
-            {
-                tag.removeTag("CustomName");
-            }
-        }
-
         /* Meta stuff */
         tag.removeTag("Dimension");
         tag.removeTag("HurtTime");
@@ -100,6 +89,10 @@ public class EntityUtils
         tag.removeTag("APX");
         tag.removeTag("APY");
         tag.removeTag("APZ");
+
+        /* Zombie pigmen stripping */
+        tag.removeTag("Anger");
+        tag.removeTag("HurtBy");
 
         return tag;
     }
@@ -197,10 +190,18 @@ public class EntityUtils
     }
 
     /**
-     * Get string pose for entity based on his attributes
+     * Get string pose for entity based on its attributes or based on given 
+     * custom pose
      */
-    public static String getPose(EntityLivingBase entity)
+    public static String getPose(EntityLivingBase entity, String custom, boolean sneak)
     {
+        boolean empty = custom.isEmpty();
+
+        if (!empty && !sneak)
+        {
+            return custom;
+        }
+
         if (entity.isElytraFlying())
         {
             return "flying";
@@ -211,7 +212,7 @@ public class EntityUtils
         }
         else if (entity.isSneaking())
         {
-            return "sneaking";
+            return sneak && !empty ? custom : "sneaking";
         }
 
         return "standing";
